@@ -17,7 +17,8 @@
     padding: 0;
 }
 
-body, html {
+body,
+html {
     height: 100vh;
     width: 100vw;
     overflow: hidden;
@@ -32,7 +33,7 @@ body, html {
     display: flex;
     width: 100%;
     height: 100%;
-    background-image: 
+    background-image:
         linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
         linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
     background-size: 30px 30px;
@@ -237,7 +238,8 @@ body, html {
 
 /* Secondary Accent Button */
 .btn-secondary {
-    border-color: rgba(255, 102, 0, 0.3); /* Tactical orange */
+    border-color: rgba(255, 102, 0, 0.3);
+    /* Tactical orange */
 }
 
 .btn-secondary::after {
@@ -273,7 +275,8 @@ body, html {
     background: rgba(0, 0, 0, 0.4);
 }
 
-.map-wrapper::before, .map-wrapper::after {
+.map-wrapper::before,
+.map-wrapper::after {
     content: '';
     position: absolute;
     width: 40px;
@@ -302,7 +305,8 @@ body, html {
     width: 100%;
     height: 100%;
     position: relative;
-    background-color: #020202; /* Placeholder deep dark background */
+    background-color: #020202;
+    /* Placeholder deep dark background */
 }
 
 /* Decorative UI elements overlaying the map container */
@@ -354,9 +358,17 @@ body, html {
 
 /* Animations */
 @keyframes pulse-red {
-    0% { box-shadow: 0 0 0 0 rgba(255, 51, 51, 0.7); }
-    70% { box-shadow: 0 0 0 10px rgba(255, 51, 51, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(255, 51, 51, 0); }
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 51, 51, 0.7);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(255, 51, 51, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 51, 51, 0);
+    }
 }
 
 /* Responsive adjustments */
@@ -364,11 +376,185 @@ body, html {
     .app-container {
         flex-direction: column;
     }
+
     .sidebar {
         width: 100%;
         height: auto;
         max-height: 40vh;
         border-right: none;
         border-bottom: 1px solid var(--accent-color);
+    }
+}
+
+/* =========================================
+   REGION INFO PANEL (FLOATING DATA TOOLTIP)
+   ========================================= */
+
+.region-info-panel {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 320px;
+    background: rgba(10, 15, 20, 0.9);
+    border: 1px solid var(--accent-color);
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.15), inset 0 0 10px rgba(0, 255, 255, 0.05);
+    backdrop-filter: blur(8px);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+
+    /* Sci-fi targeting bracket effect */
+    background-image:
+        linear-gradient(var(--accent-color), var(--accent-color)),
+        linear-gradient(var(--accent-color), var(--accent-color));
+    background-repeat: no-repeat;
+    background-size: 8px 1px, 1px 8px;
+    /* Top Right corner */
+    background-position: top right, top right;
+}
+
+/* Diagonal cut corner effect */
+.region-info-panel::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    right: -1px;
+    width: 20px;
+    height: 20px;
+    background: var(--bg-color);
+    border-top: 1px solid var(--accent-color);
+    border-left: 1px solid var(--accent-color);
+    transform: rotate(45deg) translate(14px, 14px);
+    z-index: -1;
+}
+
+.region-info-panel.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-10px) scale(0.98);
+}
+
+/* Panel Header */
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 1px dashed rgba(0, 255, 255, 0.3);
+    background: rgba(0, 255, 255, 0.05);
+}
+
+.panel-title {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: #88ccee;
+    letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+}
+
+.panel-title::before {
+    content: '■';
+    color: var(--accent-color);
+    margin-right: 8px;
+    font-size: 0.6rem;
+    animation: blink 2s infinite;
+}
+
+.btn-close {
+    background: transparent;
+    border: none;
+    color: var(--accent-color);
+    font-size: 1.2rem;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.2s, text-shadow 0.2s;
+}
+
+.btn-close:hover {
+    color: var(--danger-color);
+    text-shadow: 0 0 8px var(--danger-color);
+}
+
+/* Panel Content */
+.panel-content {
+    padding: 20px 15px;
+    flex-grow: 1;
+}
+
+.region-name {
+    font-family: var(--font-main);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #ffffff;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.data-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.data-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.data-label {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: #6699aa;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.data-value {
+    font-family: var(--font-mono);
+    font-size: 0.95rem;
+    color: var(--text-color);
+}
+
+/* Typography Utilities */
+.text-accent {
+    color: var(--accent-color);
+    text-shadow: var(--glow);
+}
+
+.text-danger {
+    color: var(--danger-color);
+    text-shadow: 0 0 10px rgba(255, 51, 51, 0.5);
+}
+
+/* Panel Footer */
+.panel-footer {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(0, 255, 255, 0.15);
+    display: flex;
+    flex-direction: column;
+}
+
+.panel-footer .data-value {
+    font-size: 0.8rem;
+    color: #88ccee;
+    margin-top: 4px;
+}
+
+@keyframes blink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.3;
     }
 }

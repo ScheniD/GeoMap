@@ -66,6 +66,41 @@
                 <!-- TARGET MAP CONTAINER -->
                 <div id="map"></div>
 
+                <!-- Region Info Panel (Hidden by default) -->
+                <div id="region-panel" class="region-info-panel">
+                    <div class="panel-header">
+                        <span class="panel-title">TARGET REGION</span>
+                        <button class="btn-close" id="close-panel" aria-label="Close Panel">✕</button>
+                    </div>
+                    <div class="panel-content">
+                        <h2 class="region-name" id="data-region-name">[BUNDESLAND_NAME]</h2>
+
+                        <div class="data-grid">
+                            <div class="data-item">
+                                <span class="data-label">POPULATION</span>
+                                <span class="data-value" id="data-population">[DATA]</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">AREA (SQ KM)</span>
+                                <span class="data-value" id="data-area">[DATA]</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">ELEVATION STATUS</span>
+                                <span class="data-value text-accent" id="data-elevation">[STATUS]</span>
+                            </div>
+                            <div class="data-item">
+                                <span class="data-label">THREAT LEVEL</span>
+                                <span class="data-value text-danger" id="data-threat">[SECURE]</span>
+                            </div>
+                        </div>
+
+                        <div class="panel-footer">
+                            <span class="data-label">CENTER COORDINATES:</span>
+                            <span class="data-value" id="data-coords">[LAT, LNG]</span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Contextual UI Overlays -->
                 <div class="crosshair"></div>
                 <div class="coordinates">LAT: 48.1351 N | LNG: 11.5820 E | ALT: 520M</div>
@@ -74,6 +109,7 @@
     </div>
 
     <script>
+        // INSERT YOUR MAPTILER API KEY HERE BEFORE DEPLOYING!
         const apiKey = 'gsAFdLyqMfi6TYFzpExS';
 
         const map = new maplibregl.Map({

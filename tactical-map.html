@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GEO-COM: TACTICAL VIEW</title>
+    <!-- MapLibre CDN -->
+    <script src="https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.css" rel="stylesheet" />
+    <style>
+        :root {
+            --bg-color: #050505;
+            --sidebar-bg: rgba(10, 15, 20, 0.85);
+            --border-color: #00ffff;
+            --text-color: #e0faff;
+            --accent-color: #00ffff;
+            --accent-hover: #00ffcc;
+            --danger-color: #ff3333;
+            --glow: 0 0 10px rgba(0, 255, 255, 0.5);
+            --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body,
+        html {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-main);
+            display: flex;
+        }
+
+        /* Scanline Background Overlay */
+        .app-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .app-container::after {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            z-index: 10;
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+
+        /* Sidebar container */
+        .sidebar {
+            width: 350px;
+            height: 100%;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--accent-color);
+            box-shadow: 2px 0 15px rgba(0, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            z-index: 5;
+            position: relative;
+            backdrop-filter: blur(5px);
+        }
+
+        .header {
+            margin-bottom: 20px;
+            border-bottom: 1px dashed rgba(0, 255, 255, 0.4);
+            padding-bottom: 15px;
+        }
+
+        .title {
+            font-family: var(--font-mono);
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            text-shadow: var(--glow);
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+        }
+
+        .subtitle {
+            font-size: 0.75rem;
+            color: #88ccee;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* Dynamic Info Panel inside Sidebar */
+        .info-panel {
+            background: rgba(0, 255, 255, 0.05);
+            border: 1px solid var(--accent-color);
+            padding: 15px;
+            margin-top: 20px;
+            flex-grow: 1;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 0 15px rgba(0, 255, 255, 0.1);
+        }
+
+        .info-panel.hidden {
+            display: none;
+        }
+
+        .region-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ffffff;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+            padding-bottom: 5px;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+        }
+
+        .data-label {
+            color: #6699aa;
+        }
+
+        .data-value {
+            color: var(--accent-color);
+            text-shadow: var(--glow);
+            text-align: right;
+        }
+
+        /* Map Container */
+        .main-content {
+            flex-grow: 1;
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #020202;
+        }
+
+        .crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            pointer-events: none;
+            opacity: 0.3;
+            z-index: 2;
+        }
+
+        .crosshair::before,
+        .crosshair::after {
+            content: '';
+            position: absolute;
+            background-color: var(--accent-color);
+        }
+
+        .crosshair::before {
+            top: 50%;
+            left: -10px;
+            right: -10px;
+            height: 1px;
+        }
+
+        .crosshair::after {
+            left: 50%;
+            top: -10px;
+            bottom: -10px;
+            width: 1px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="header">
+                <h1 class="title">GEO-COM</h1>
+                <div class="subtitle">TACTICAL VIEW: GERMANY</div>
+            </div>
+
+            <div id="instruction" style="font-family: monospace; color: #88ccee; font-size: 0.9rem;">
+                AWAITING TARGET SELECTION...<br><br>
+                > Click on a federal state to scan.
+            </div>
+
+            <div id="region-panel" class="info-panel hidden">
+                <h2 class="region-name" id="state-name">SCANNING...</h2>
+
+                <div class="data-row">
+                    <span class="data-label">ELEVATION STATUS:</span>
+                    <span class="data-value" id="state-elev">NOMINAL</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">COORDINATES:</span>
+                    <span class="data-value" id="state-coords">--.--, --.--</span>
+                </div>
+                <div class="data-row" style="margin-top: 20px;">
+                    <span class="data-label">THREAT LEVEL:</span>
+                    <span class="data-value"
+                        style="color: var(--danger-color); text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);">SECURE</span>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div id="map"></div>
+            <div class="crosshair"></div>
+        </main>
+    </div>
+
+    <script>
+        // 1. Config
+        // INSERT YOUR MAPTILER API KEY HERE BEFORE DEPLOYING!
+        const apiKey = 'YOUR_MAPTILER_API_KEY';
+
+        // 2. Initialize MapLibre Map
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: `https://api.maptiler.com/maps/satellite/style.json?key=${apiKey}`,
+            center: [10.4515, 51.1657], // Center of Germany
+            zoom: 5.5,
+            pitch: 65, // High pitch for 3D effect
+            bearing: 0
+        });
+
+        map.on('load', () => {
+
+            // 3. Add 3D Terrain
+            map.addSource('terrain-source', {
+                type: 'raster-dem',
+                url: `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${apiKey}`,
+                tileSize: 256
+            });
+            map.setTerrain({ source: 'terrain-source', exaggeration: 2.0 });
+
+            // 4. Add GeoJSON Data for German States (Bundesländer)
+            map.addSource('germany-states', {
+                type: 'geojson',
+                data: 'https://raw.githubusercontent.com/isellsoap/deutschlandGeoJSON/main/2_bundeslaender/2_hoch.geo.json',
+                generateId: true // Required for hover/click state management
+            });
+
+            // 5. Add Sci-Fi Polygon Fill Layer
+            map.addLayer({
+                id: 'states-fill',
+                type: 'fill',
+                source: 'germany-states',
+                paint: {
+                    'fill-color': '#00ffff',
+                    'fill-opacity': [
+                        'case',
+                        ['boolean', ['feature-state', 'active'], false],
+                        0.4, // Active state opacity
+                        0.0  // Completely transparent default
+                    ]
+                }
+            });
+
+            // 6. Add Sci-Fi Glowing Borders Layer
+            map.addLayer({
+                id: 'states-borders',
+                type: 'line',
+                source: 'germany-states',
+                paint: {
+                    'line-color': '#00ffff',
+                    'line-width': [
+                        'case',
+                        ['boolean', ['feature-state', 'active'], false],
+                        4, // Active state line width
+                        2  // Default state line width
+                    ],
+                    // Add a glow effect
+                    'line-opacity': [
+                        'case',
+                        ['boolean', ['feature-state', 'active'], false],
+                        1.0, // Active state glow
+                        0.6  // Default state glow
+                    ]
+                }
+            });
+        });
+
+        // 7. Click Interaction State Management
+        let clickedStateId = null;
+
+        map.on('click', 'states-fill', (e) => {
+            if (e.features.length > 0) {
+                const feature = e.features[0];
+                const stateName = feature.properties.NAME_1 || feature.properties.name || "UNKNOWN REGION"; // Fallbacks depending on GeoJSON schema
+
+                // Remove highlight from previously clicked state
+                if (clickedStateId !== null) {
+                    map.setFeatureState(
+                        { source: 'germany-states', id: clickedStateId },
+                        { active: false }
+                    );
+                }
+
+                // Apply highlight to the new clicked state
+                clickedStateId = feature.id;
+                map.setFeatureState(
+                    { source: 'germany-states', id: clickedStateId },
+                    { active: true }
+                );
+
+                // Update UI Sidebar Panel
+                document.getElementById('instruction').style.display = 'none';
+                document.getElementById('region-panel').classList.remove('hidden');
+
+                document.getElementById('state-name').textContent = stateName;
+                document.getElementById('state-coords').textContent = `${e.lngLat.lat.toFixed(4)}, ${e.lngLat.lng.toFixed(4)}`;
+            }
+        });
+
+        // Change mouse cursor when hovering over states
+        map.on('mouseenter', 'states-fill', () => {
+            map.getCanvas().style.cursor = 'crosshair';
+        });
+
+        map.on('mouseleave', 'states-fill', () => {
+            map.getCanvas().style.cursor = '';
+        });
+    });
+    </script>
+
+</body>
+
+</html>
