@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tactical 3D Map Command Center</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.css" rel="stylesheet" />
+</head>
+
+<body>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="header">
+                <h1 class="title">COMMAND CENTER</h1>
+                <div class="subtitle">GEO-DATA MODULE v2.4</div>
+            </div>
+
+            <div class="status-panel">
+                <div class="status-row">
+                    <span class="status-label">SYS_STATUS</span>
+                    <span class="status-value">ONLINE</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">UPLINK</span>
+                    <span class="status-value">SECURE</span>
+                </div>
+                <div class="status-row">
+                    <span class="status-label">LOCAL_TIME</span>
+                    <span class="status-value">22:57:10</span>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="section-title">Tactical Operations</div>
+
+                <button class="btn">
+                    <span>Select Bavaria</span>
+                    <span class="btn-icon">❖</span>
+                </button>
+
+                <button class="btn">
+                    <span>Scan Terrain</span>
+                    <span class="btn-icon">⦾</span>
+                </button>
+
+                <button class="btn btn-secondary">
+                    <span>Toggle Night Vision</span>
+                    <span class="btn-icon">◑</span>
+                </button>
+
+                <button class="btn">
+                    <span>Deploy Units</span>
+                    <span class="btn-icon">⇪</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Map Area -->
+        <main class="main-content">
+            <div class="map-wrapper">
+                <!-- TARGET MAP CONTAINER -->
+                <div id="map"></div>
+
+                <!-- Contextual UI Overlays -->
+                <div class="crosshair"></div>
+                <div class="coordinates">LAT: 48.1351 N | LNG: 11.5820 E | ALT: 520M</div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const apiKey = 'gsAFdLyqMfi6TYFzpExS';
+
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: `https://api.maptiler.com/maps/satellite/style.json?key=${apiKey}`,
+            center: [10.98549, 47.42155],
+            zoom: 13,
+            pitch: 80
+        });
+
+        // 5. Die Höhenmeter (das "Schwarz-Weiß-Foto") laden
+        map.on('load', () => {
+            map.addSource('terrain-source', {
+                type: 'raster-dem',
+                url: `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${apiKey}`,
+                tileSize: 256
+            });
+            map.setTerrain({ source: 'terrain-source', exaggeration: 2.0 });
+        });
+    </script>
+
+</body>
+
+</html>

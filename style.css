@@ -1,0 +1,374 @@
+:root {
+    --bg-color: #050505;
+    --sidebar-bg: rgba(10, 15, 20, 0.85);
+    --border-color: #00ffff;
+    --text-color: #e0faff;
+    --accent-color: #00ffff;
+    --accent-hover: #00ffcc;
+    --danger-color: #ff3333;
+    --glow: 0 0 10px rgba(0, 255, 255, 0.5);
+    --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: 'Courier New', Courier, monospace;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body, html {
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--font-main);
+    display: flex;
+}
+
+/* Container for background grid effect */
+.app-container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 30px 30px;
+    position: relative;
+}
+
+/* Scanline overlay */
+.app-container::after {
+    content: " ";
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    z-index: 10;
+    background-size: 100% 4px, 6px 100%;
+    pointer-events: none;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 350px;
+    height: 100%;
+    background-color: var(--sidebar-bg);
+    border-right: 1px solid var(--accent-color);
+    box-shadow: 2px 0 15px rgba(0, 255, 255, 0.2);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    z-index: 5;
+    position: relative;
+    backdrop-filter: blur(5px);
+}
+
+/* Decorative top-left corner fold */
+.sidebar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 30px;
+    height: 30px;
+    border-top: 3px solid var(--accent-color);
+    border-left: 3px solid var(--accent-color);
+    box-shadow: -2px -2px 10px rgba(0, 255, 255, 0.5);
+}
+
+/* Header */
+.header {
+    margin-bottom: 30px;
+    border-bottom: 1px dashed rgba(0, 255, 255, 0.4);
+    padding-bottom: 15px;
+}
+
+.title {
+    font-family: var(--font-mono);
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: var(--accent-color);
+    text-shadow: var(--glow);
+    letter-spacing: 2px;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+}
+
+.title::before {
+    content: '';
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    background-color: var(--danger-color);
+    border-radius: 50%;
+    margin-right: 10px;
+    box-shadow: 0 0 10px var(--danger-color);
+    animation: pulse-red 2s infinite;
+}
+
+.subtitle {
+    font-size: 0.75rem;
+    color: #88ccee;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.status-panel {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    margin-bottom: 30px;
+    background: rgba(0, 255, 255, 0.05);
+    padding: 15px;
+    border-left: 3px solid var(--accent-color);
+}
+
+.status-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.status-label {
+    color: #88ccee;
+}
+
+.status-value {
+    color: var(--accent-color);
+    text-shadow: var(--glow);
+}
+
+/* Controls Section */
+.controls {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.section-title {
+    font-size: 0.85rem;
+    color: #88ccee;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+}
+
+.section-title::after {
+    content: '';
+    flex-grow: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(0, 255, 255, 0.3) 0%, transparent 100%);
+    margin-left: 10px;
+}
+
+/* Futuristic Buttons */
+.btn {
+    background: transparent;
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    color: var(--text-color);
+    padding: 12px 20px;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.2), transparent);
+    transition: all 0.4s ease;
+}
+
+.btn::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 10px;
+    height: 10px;
+    border-bottom: 2px solid var(--accent-color);
+    border-right: 2px solid var(--accent-color);
+    opacity: 0.5;
+    transition: opacity 0.3s;
+}
+
+.btn:hover {
+    border-color: var(--accent-color);
+    box-shadow: inset 0 0 15px rgba(0, 255, 255, 0.1), 0 0 10px rgba(0, 255, 255, 0.2);
+    color: #ffffff;
+    text-shadow: 0 0 5px var(--accent-color);
+}
+
+.btn:hover::before {
+    left: 100%;
+}
+
+.btn:hover::after {
+    opacity: 1;
+    box-shadow: 2px 2px 5px rgba(0, 255, 255, 0.5);
+}
+
+.btn-icon {
+    font-size: 1.2rem;
+    color: var(--accent-color);
+}
+
+/* Secondary Accent Button */
+.btn-secondary {
+    border-color: rgba(255, 102, 0, 0.3); /* Tactical orange */
+}
+
+.btn-secondary::after {
+    border-bottom-color: #ff6600;
+    border-right-color: #ff6600;
+}
+
+.btn-secondary:hover {
+    border-color: #ff6600;
+    box-shadow: inset 0 0 15px rgba(255, 102, 0, 0.1), 0 0 10px rgba(255, 102, 0, 0.2);
+    text-shadow: 0 0 5px #ff6600;
+}
+
+.btn-secondary .btn-icon {
+    color: #ff6600;
+}
+
+/* Main Map Area */
+.main-content {
+    flex-grow: 1;
+    position: relative;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Tactical corner brackets for the map */
+.map-wrapper {
+    flex-grow: 1;
+    position: relative;
+    border: 1px solid rgba(0, 255, 255, 0.15);
+    padding: 2px;
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.map-wrapper::before, .map-wrapper::after {
+    content: '';
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--accent-color);
+    pointer-events: none;
+    z-index: 5;
+}
+
+.map-wrapper::before {
+    top: -2px;
+    left: -2px;
+    border-right: none;
+    border-bottom: none;
+}
+
+.map-wrapper::after {
+    bottom: -2px;
+    right: -2px;
+    border-left: none;
+    border-top: none;
+}
+
+/* The actual map target div */
+#map {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    background-color: #020202; /* Placeholder deep dark background */
+}
+
+/* Decorative UI elements overlaying the map container */
+.crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    pointer-events: none;
+    opacity: 0.3;
+    z-index: 2;
+}
+
+.crosshair::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: -10px;
+    right: -10px;
+    height: 1px;
+    background-color: var(--accent-color);
+}
+
+.crosshair::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: -10px;
+    bottom: -10px;
+    width: 1px;
+    background-color: var(--accent-color);
+}
+
+.coordinates {
+    position: absolute;
+    bottom: 15px;
+    left: 20px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--accent-color);
+    background: rgba(0, 0, 0, 0.6);
+    padding: 5px 10px;
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* Animations */
+@keyframes pulse-red {
+    0% { box-shadow: 0 0 0 0 rgba(255, 51, 51, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 51, 51, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 51, 51, 0); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .app-container {
+        flex-direction: column;
+    }
+    .sidebar {
+        width: 100%;
+        height: auto;
+        max-height: 40vh;
+        border-right: none;
+        border-bottom: 1px solid var(--accent-color);
+    }
+}
