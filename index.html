@@ -240,65 +240,55 @@
                     <span class="btn-icon">⇪</span>
                 </button>
             </div>
+
+            <div id="instruction" style="font-family: monospace; color: #88ccee; font-size: 0.9rem; margin-top:20px;">
+                AWAITING TARGET SELECTION...<br><br>
+                > Click on a federal state to scan.
+            </div>
+
+            <div id="region-panel" class="info-panel hidden">
+                <h2 class="region-name" id="state-name">SCANNING...</h2>
+
+                <div class="data-row">
+                    <span class="data-label">ELEVATION STATUS:</span>
+                    <span class="data-value" id="state-elev">NOMINAL</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">COORDINATES:</span>
+                    <span class="data-value" id="state-coords">--.--, --.--</span>
+                </div>
+                <div class="data-row" style="margin-top: 20px;">
+                    <span class="data-label">THREAT LEVEL:</span>
+                    <span class="data-value"
+                        style="color: var(--danger-color); text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);">SECURE</span>
+                </div>
+            </div>
+
         </aside>
 
         <!-- Main Map Area -->
         <main class="main-content">
-            <div class="map-wrapper">
+            <div class="map-wrapper" style="width:100%; height:100%;">
                 <!-- TARGET MAP CONTAINER -->
                 <div id="map"></div>
 
-                <!-- Region Info Panel (Hidden by default) -->
-                <div id="region-panel" class="region-info-panel hidden">
-                    <div class="panel-header">
-                        <span class="panel-title">TARGET REGION</span>
-                        <button class="btn-close" id="close-panel" aria-label="Close Panel">✕</button>
-                    </div>
-                    <div class="panel-content">
-                        <h2 class="region-name" id="state-name">[BUNDESLAND_NAME]</h2>
-
-                        <div class="data-grid">
-                            <div class="data-item">
-                                <span class="data-label">POPULATION</span>
-                                <span class="data-value" id="data-population">[DATA]</span>
-                            </div>
-                            <div class="data-item">
-                                <span class="data-label">AREA (SQ KM)</span>
-                                <span class="data-value" id="data-area">[DATA]</span>
-                            </div>
-                            <div class="data-item">
-                                <span class="data-label">ELEVATION STATUS</span>
-                                <span class="data-value text-accent" id="state-elev">[STATUS]</span>
-                            </div>
-                            <div class="data-item">
-                                <span class="data-label">THREAT LEVEL</span>
-                                <span class="data-value text-danger" id="data-threat">[SECURE]</span>
-                            </div>
-                        </div>
-
-                        <div class="panel-footer">
-                            <span class="data-label">CENTER COORDINATES:</span>
-                            <span class="data-value" id="state-coords">[LAT, LNG]</span>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Contextual UI Overlays -->
                 <div class="crosshair"></div>
-                <div class="coordinates">LAT: 48.1351 N | LNG: 11.5820 E | ALT: 520M</div>
+                <div class="coordinates"
+                    style="position:absolute; bottom:20px; left:20px; font-family: monospace; color:#00ffff; background:rgba(0,0,0,0.5); padding:5px;">
+                    LAT: 48.1351 N | LNG: 11.5820 E | ALT: 520M</div>
             </div>
         </main>
     </div>
 
     <script>
         // 1. Config
-        // INSERT YOUR MAPTILER API KEY HERE BEFORE DEPLOYING!
-        const apiKey = 'YOUR_MAPTILER_API_KEY_HERE';
+        const apiKey = 'gsAFdLyqMfi6TYFzpExS';
 
         // 2. Initialize MapLibre Map
         const map = new maplibregl.Map({
             container: 'map',
-            style: `https://api.maptiler.com/maps/satellite/style.json?key=${apiKey}`,
+            style: `https://api.maptiler.com/maps/dataviz-dark/style.json?key=${apiKey}`,
             center: [10.4515, 51.1657], // Center of Germany
             zoom: 5.5,
             pitch: 65, // High pitch for 3D effect
@@ -402,7 +392,6 @@
         map.on('mouseleave', 'states-fill', () => {
             map.getCanvas().style.cursor = '';
         });
-    });
     </script>
 
 </body>
