@@ -4,21 +4,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GEO-COM: TACTICAL VIEW</title>
-    <!-- MapLibre CDN -->
-    <script src="https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.js"></script>
-    <link href="https://unpkg.com/maplibre-gl@latest/dist/maplibre-gl.css" rel="stylesheet" />
+    <title>GEO-COM: TACTICAL TERRAIN ANALYSIS</title>
+    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap"
+        rel="stylesheet">
     <style>
         :root {
-            --bg-color: #050505;
-            --sidebar-bg: rgba(10, 15, 20, 0.85);
-            --border-color: #00ffff;
-            --text-color: #e0faff;
-            --accent-color: #00ffff;
-            --danger-color: #ff3333;
-            --glow: 0 0 10px rgba(0, 255, 255, 0.5);
-            --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            --font-mono: 'Courier New', Courier, monospace;
+            --cyan: #00f5ff;
+            --cyan-dim: rgba(0, 245, 255, 0.15);
+            --cyan-glow: 0 0 12px rgba(0, 245, 255, 0.7), 0 0 30px rgba(0, 245, 255, 0.3);
+            --amber: #ffae00;
+            --amber-glow: 0 0 12px rgba(255, 174, 0, 0.7);
+            --red: #ff2244;
+            --green: #00ff88;
+            --bg: #02060d;
+            --panel: rgba(3, 12, 22, 0.92);
+            --border: rgba(0, 245, 255, 0.35);
+            --font-display: 'Orbitron', monospace;
+            --font-mono: 'Share Tech Mono', monospace;
         }
 
         * {
@@ -27,453 +31,1446 @@
             padding: 0;
         }
 
-        body,
-        html {
-            height: 100vh;
+        html,
+        body {
             width: 100vw;
+            height: 100vh;
             overflow: hidden;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: var(--font-main);
-            display: flex;
+            background: var(--bg);
+            font-family: var(--font-mono);
+            color: var(--cyan);
         }
 
-        /* Scanline Background Overlay */
-        .app-container {
+        /* ── SCANLINES ─────────────────────────────────────── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(0, 0, 0, 0.15) 2px,
+                    rgba(0, 0, 0, 0.15) 4px);
+            pointer-events: none;
+            z-index: 1000;
+            animation: scanroll 8s linear infinite;
+        }
+
+        @keyframes scanroll {
+            from {
+                background-position: 0 0;
+            }
+
+            to {
+                background-position: 0 200px;
+            }
+        }
+
+        /* ── VHS flicker ───────────────────────────────────── */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: transparent;
+            pointer-events: none;
+            z-index: 999;
+            animation: flicker 0.15s steps(1) infinite;
+        }
+
+        @keyframes flicker {
+            0% {
+                opacity: 1;
+            }
+
+            92% {
+                opacity: 1;
+            }
+
+            93% {
+                opacity: 0.94;
+            }
+
+            94% {
+                opacity: 1;
+            }
+
+            97% {
+                opacity: 1;
+            }
+
+            98% {
+                opacity: 0.96;
+            }
+
+            99% {
+                opacity: 1;
+            }
+        }
+
+        /* ── LAYOUT ────────────────────────────────────────── */
+        .shell {
             display: flex;
             width: 100%;
             height: 100%;
             position: relative;
         }
 
-        .app-container::after {
-            content: " ";
-            display: block;
+        /* ── MAP ───────────────────────────────────────────── */
+        #map {
             position: absolute;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
-            z-index: 10;
-            background-size: 100% 4px;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* hide default MapLibre attribution */
+        .maplibregl-ctrl-attrib {
+            display: none !important;
+        }
+
+        .maplibregl-ctrl-logo {
+            display: none !important;
+        }
+
+        /* ── CORNER BRACKETS ──────────────────────────────── */
+        .corner {
+            position: fixed;
+            width: 40px;
+            height: 40px;
+            z-index: 200;
             pointer-events: none;
         }
 
-        /* Sidebar container */
-        .sidebar {
-            width: 350px;
+        .corner::before,
+        .corner::after {
+            content: '';
+            position: absolute;
+            background: var(--cyan);
+            box-shadow: var(--cyan-glow);
+        }
+
+        .corner-tl {
+            top: 12px;
+            left: 12px;
+        }
+
+        .corner-tr {
+            top: 12px;
+            right: 12px;
+        }
+
+        .corner-bl {
+            bottom: 12px;
+            left: 12px;
+        }
+
+        .corner-br {
+            bottom: 12px;
+            right: 12px;
+        }
+
+        /* Horizontal bar */
+        .corner::before {
+            width: 100%;
+            height: 2px;
+        }
+
+        /* Vertical bar */
+        .corner::after {
+            width: 2px;
             height: 100%;
-            background-color: var(--sidebar-bg);
-            border-right: 1px solid var(--accent-color);
-            box-shadow: 2px 0 15px rgba(0, 255, 255, 0.2);
+        }
+
+        .corner-tl::before {
+            top: 0;
+            left: 0;
+        }
+
+        .corner-tl::after {
+            top: 0;
+            left: 0;
+        }
+
+        .corner-tr::before {
+            top: 0;
+            right: 0;
+            left: auto;
+        }
+
+        .corner-tr::after {
+            top: 0;
+            right: 0;
+            left: auto;
+        }
+
+        .corner-bl::before {
+            bottom: 0;
+            left: 0;
+            top: auto;
+        }
+
+        .corner-bl::after {
+            bottom: 0;
+            left: 0;
+            top: auto;
+        }
+
+        .corner-br::before {
+            bottom: 0;
+            right: 0;
+            top: auto;
+            left: auto;
+        }
+
+        .corner-br::after {
+            bottom: 0;
+            right: 0;
+            top: auto;
+            left: auto;
+        }
+
+        /* ── SIDEBAR ─ minimalist ──────────────────────────── */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 260px;
+            background: rgba(2, 6, 13, 0.88);
+            border-right: 1px solid rgba(0, 245, 255, 0.1);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
             display: flex;
             flex-direction: column;
-            padding: 20px;
-            z-index: 5;
-            position: relative;
-            backdrop-filter: blur(5px);
+            padding: 28px 18px 24px;
+            z-index: 100;
+            gap: 22px;
             overflow-y: auto;
         }
 
+        /* ── HEADER ─────────────────────────────────────────── */
         .header {
-            margin-bottom: 20px;
-            border-bottom: 1px dashed rgba(0, 255, 255, 0.4);
-            padding-bottom: 15px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid rgba(0, 245, 255, 0.08);
+        }
+
+        .logo-line {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 3px;
+        }
+
+        .logo-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--cyan);
+            flex-shrink: 0;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
         }
 
         .title {
-            font-family: var(--font-mono);
-            font-size: 1.4rem;
-            font-weight: bold;
-            color: var(--accent-color);
-            text-shadow: var(--glow);
-            letter-spacing: 2px;
-            margin-bottom: 5px;
+            font-family: var(--font-display);
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 4px;
+            color: rgba(0, 245, 255, 0.9);
+            text-transform: uppercase;
         }
 
         .subtitle {
-            font-size: 0.75rem;
-            color: #88ccee;
-            letter-spacing: 1px;
+            font-size: 0.62rem;
+            color: rgba(0, 245, 255, 0.28);
+            letter-spacing: 1.5px;
             text-transform: uppercase;
+            padding-left: 14px;
         }
 
-        .status-panel {
-            margin-bottom: 20px;
-            font-family: var(--font-mono);
-            font-size: 0.85rem;
+        /* ── DIVIDER ─────────────────────────────────────────── */
+        .divider {
+            height: 1px;
+            background: rgba(0, 245, 255, 0.08);
         }
 
-        .status-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-        }
-
-        .status-label {
-            color: #6699aa;
-        }
-
-        .status-value {
-            color: var(--accent-color);
-            text-shadow: var(--glow);
-        }
-
-        .controls {
-            margin-bottom: 20px;
-        }
-
-        .section-title {
-            font-size: 0.85rem;
-            color: #6699aa;
+        /* ── SECTION TITLE ───────────────────────────────────── */
+        .sec-title {
+            font-size: 0.58rem;
+            letter-spacing: 2.5px;
+            color: rgba(0, 245, 255, 0.3);
             text-transform: uppercase;
             margin-bottom: 10px;
-            border-bottom: 1px solid rgba(102, 153, 170, 0.3);
-            padding-bottom: 5px;
         }
 
+        /* ── TERRAIN BARS ────────────────────────────────────── */
+        .terrain-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+        }
+
+        .tbar-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .tbar-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.68rem;
+            color: rgba(0, 245, 255, 0.45);
+        }
+
+        .tbar-track {
+            height: 2px;
+            background: rgba(0, 245, 255, 0.07);
+            border-radius: 1px;
+            overflow: hidden;
+        }
+
+        .tbar-fill {
+            height: 100%;
+            background: rgba(0, 245, 255, 0.5);
+            border-radius: 1px;
+            animation: barload 1.4s ease-out forwards;
+            width: 0;
+        }
+
+        @keyframes barload {
+            from {
+                width: 0;
+            }
+        }
+
+        /* ── BUTTON ──────────────────────────────────────────── */
         .btn {
-            width: 100%;
-            padding: 10px 15px;
-            background: rgba(0, 255, 255, 0.1);
-            border: 1px solid var(--accent-color);
-            color: var(--text-color);
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(0, 245, 255, 0.07);
+            color: rgba(0, 245, 255, 0.7);
             font-family: var(--font-mono);
-            font-size: 0.85rem;
+            font-size: 0.75rem;
+            padding: 9px 0;
             cursor: pointer;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
-            transition: all 0.2s ease;
+            letter-spacing: 1px;
+            transition: color 0.15s;
+            width: 100%;
         }
 
         .btn:hover {
-            background: rgba(0, 255, 255, 0.2);
-            box-shadow: var(--glow);
+            color: var(--cyan);
         }
 
-        .btn-secondary {
-            border-color: #6699aa;
-            color: #6699aa;
+        .btn.active {
+            color: var(--cyan);
         }
 
-        /* Dynamic Info Panel inside Sidebar */
-        .info-panel {
-            background: rgba(0, 255, 255, 0.05);
-            border: 1px solid var(--accent-color);
-            padding: 15px;
-            margin-top: 20px;
-            transition: all 0.3s ease;
-            box-shadow: inset 0 0 15px rgba(0, 255, 255, 0.1);
+        .btn-icon {
+            opacity: 0.5;
+            font-size: 0.85rem;
         }
 
-        .info-panel.hidden {
+        /* ── REGION PANEL ────────────────────────────────────── */
+        .region-panel {
             display: none;
+            flex-direction: column;
+            gap: 11px;
+            animation: fadein 0.35s ease;
+        }
+
+        .region-panel.visible {
+            display: flex;
+        }
+
+        @keyframes fadein {
+            from {
+                opacity: 0;
+                transform: translateY(4px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .region-name {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #ffffff;
-            text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
-            margin-bottom: 15px;
+            font-family: var(--font-display);
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.9);
+            letter-spacing: 2px;
             text-transform: uppercase;
-            border-bottom: 1px solid rgba(0, 255, 255, 0.3);
-            padding-bottom: 5px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 245, 255, 0.1);
         }
 
         .data-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 10px;
-            font-family: var(--font-mono);
-            font-size: 0.85rem;
+            font-size: 0.72rem;
         }
 
-        .data-label {
-            color: #6699aa;
+        .d-label {
+            color: rgba(0, 245, 255, 0.35);
         }
 
-        .data-value {
-            color: var(--accent-color);
-            text-shadow: var(--glow);
-            text-align: right;
+        .d-value {
+            color: rgba(0, 245, 255, 0.8);
         }
 
-        .text-danger {
-            color: var(--danger-color);
-            text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+        /* ── THREAT METER ────────────────────────────────────── */
+        .threat-row {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-top: 4px;
         }
 
-        /* Map Container */
-        .main-content {
-            flex-grow: 1;
-            position: relative;
-            /* Required constraint */
+        .threat-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.68rem;
+            color: rgba(0, 245, 255, 0.35);
+        }
+
+        .threat-track {
+            height: 3px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .threat-fill {
             height: 100%;
+            border-radius: 2px;
+            transition: width 0.7s cubic-bezier(.4, 0, .2, 1);
         }
 
-        #map {
-            /* This absolute positioning prevents height collision */
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            left: 0;
+        .threat-low {
+            background: #00ff88;
+        }
+
+        .threat-medium {
+            background: #ffae00;
+        }
+
+        .threat-high {
+            background: #ff2244;
+        }
+
+        /* ── HINT TEXT ───────────────────────────────────────── */
+        .scan-text {
+            font-size: 0.68rem;
+            color: rgba(0, 245, 255, 0.25);
+            line-height: 1.7;
+        }
+
+        /* ── HUD OVERLAYS ──────────────────────────────────── */
+        .hud {
+            position: fixed;
+            pointer-events: none;
+            z-index: 150;
+        }
+
+        /* top-centre bar */
+        .hud-top {
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 6px 20px;
+            backdrop-filter: blur(8px);
+        }
+
+        .hud-title {
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            letter-spacing: 4px;
+            color: var(--cyan);
+            text-shadow: var(--cyan-glow);
+        }
+
+        .hud-sep {
+            color: var(--border);
+        }
+
+        #hud-time {
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            color: var(--amber);
+            text-shadow: var(--amber-glow);
+            min-width: 80px;
+        }
+
+        /* bottom coordinate strip */
+        .hud-bottom {
+            bottom: 14px;
+            left: 260px;
             right: 0;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+        }
+
+        .hud-coord {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 5px 14px;
+            font-size: 0.75rem;
+            backdrop-filter: blur(6px);
+            color: var(--green);
+            text-shadow: 0 0 8px var(--green);
+        }
+
+        /* ── TERRAIN EXAGGERATION KNOB ─────────────────────── */
+        .hud-right {
+            position: fixed;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+            z-index: 150;
+            pointer-events: all;
+        }
+
+        .hud-knob-label {
+            font-size: 0.6rem;
+            color: rgba(0, 245, 255, 0.5);
+            letter-spacing: 2px;
+            writing-mode: vertical-rl;
+            text-transform: uppercase;
+        }
+
+        .hud-knob {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .knob-btn {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            color: var(--cyan);
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+        .knob-btn:hover {
+            background: var(--cyan-dim);
+            box-shadow: var(--cyan-glow);
+        }
+
+        .exag-val {
+            font-family: var(--font-display);
+            font-size: 0.65rem;
+            color: var(--amber);
+            text-align: center;
+        }
+
+        /* ── SCAN RING ─────────────────────────────────────── */
+        @keyframes ring-spin {
+            from {
+                transform: translate(-50%, -50%) rotate(0deg);
+            }
+
+            to {
+                transform: translate(-50%, -50%) rotate(360deg);
+            }
+        }
+
+        /* center dot only */
+        .scan-dot {
+            position: fixed;
+            top: 50%;
+            left: calc(50% + 160px);
+            transform: translate(-50%, -50%);
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--cyan);
+            box-shadow: var(--cyan-glow);
+            pointer-events: none;
+            z-index: 120;
+            animation: pulse 1.6s ease-in-out infinite;
+        }
+
+        /* ── TACTICAL DROPDOWN ─────────────────────────────── */
+        .tac-select {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--border);
+            color: var(--cyan);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            padding: 9px 12px;
+            cursor: pointer;
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
+            letter-spacing: 1px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2300f5ff'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 30px;
+            margin-bottom: 8px;
+        }
+
+        .tac-select:focus {
+            border-color: var(--cyan);
+            box-shadow: var(--cyan-glow);
+        }
+
+        .tac-select option {
+            background: #030c16;
+            color: var(--cyan);
+            padding: 6px;
+        }
+
+        .tac-select optgroup {
+            color: rgba(0, 245, 255, 0.4);
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* ── CAMERA OVERLAY ─────────────────────────────────────── */
+        .cam-panel {
+            position: fixed;
+            bottom: 54px;
+            right: 60px;
+            width: 340px;
+            background: rgba(2, 6, 13, 0.92);
+            border: 1px solid rgba(0, 245, 255, 0.15);
+            backdrop-filter: blur(12px);
+            z-index: 300;
+            display: none;
+            flex-direction: column;
+            box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
+            animation: fadein 0.3s ease;
+        }
+
+        .cam-panel.visible {
+            display: flex;
+        }
+
+        .cam-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            border-bottom: 1px solid rgba(0, 245, 255, 0.08);
+            cursor: move;
+            user-select: none;
+        }
+
+        .cam-title {
+            font-size: 0.65rem;
+            letter-spacing: 2px;
+            color: rgba(0, 245, 255, 0.6);
+            text-transform: uppercase;
+        }
+
+        .cam-badge {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.6rem;
+            color: #00ff88;
+        }
+
+        .cam-badge::before {
+            content: '';
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #00ff88;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .cam-close {
+            background: none;
+            border: none;
+            color: rgba(0, 245, 255, 0.4);
+            cursor: pointer;
+            font-size: 1rem;
+            line-height: 1;
+            padding: 0 0 0 10px;
+            transition: color 0.15s;
+        }
+
+        .cam-close:hover {
+            color: var(--cyan);
+        }
+
+        .cam-img-wrap {
+            position: relative;
+            width: 100%;
+            height: 210px;
+            background: #000;
+            overflow: hidden;
+        }
+
+        .cam-img-wrap img {
             width: 100%;
             height: 100%;
-            background-color: #020202;
+            object-fit: cover;
+            display: block;
         }
 
-        .crosshair {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 40px;
-            height: 40px;
-            pointer-events: none;
-            opacity: 0.3;
-            z-index: 2;
+        .cam-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 7px 12px;
+            border-top: 1px solid rgba(0, 245, 255, 0.08);
         }
 
-        .crosshair::before,
-        .crosshair::after {
-            content: '';
-            position: absolute;
-            background-color: var(--accent-color);
+        .cam-peak-label {
+            font-size: 0.65rem;
+            color: rgba(0, 245, 255, 0.5);
+            letter-spacing: 1px;
         }
 
-        .crosshair::before {
-            top: 50%;
-            left: -10px;
-            right: -10px;
-            height: 1px;
+        .cam-updated {
+            font-size: 0.58rem;
+            color: rgba(0, 245, 255, 0.25);
         }
 
-        .crosshair::after {
-            left: 50%;
-            top: -10px;
-            bottom: -10px;
-            width: 1px;
+        .cam-ext-link {
+            font-size: 0.6rem;
+            color: rgba(0, 245, 255, 0.4);
+            text-decoration: none;
+            border-bottom: 1px solid rgba(0, 245, 255, 0.15);
+            transition: color 0.15s;
         }
 
-        .coordinates-overlay {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            font-family: var(--font-mono);
-            color: var(--accent-color);
-            background: rgba(0, 0, 0, 0.6);
-            border: 1px solid var(--accent-color);
-            padding: 5px 10px;
-            z-index: 5;
-            font-size: 0.85rem;
-            text-shadow: var(--glow);
+        .cam-ext-link:hover {
+            color: var(--cyan);
+        }
+
+        /* scrollbar */
+        .sidebar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(0, 245, 255, 0.2);
+        }
+
+        /* ── Animated loading bar at top ──────────────────── */
+        .init-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 2px;
+            background: var(--cyan);
+            box-shadow: var(--cyan-glow);
+            z-index: 2000;
+            animation: initbar 3s ease-out forwards;
+        }
+
+        @keyframes initbar {
+            from {
+                width: 0;
+                opacity: 1;
+            }
+
+            80% {
+                width: 100%;
+                opacity: 1;
+            }
+
+            100% {
+                width: 100%;
+                opacity: 0;
+            }
         }
     </style>
 </head>
 
 <body>
 
-    <div class="app-container">
-        <!-- Sidebar -->
+    <!-- CAMERA PANEL -->
+    <div class="cam-panel" id="cam-panel">
+        <div class="cam-header" id="cam-header">
+            <span class="cam-title">Live Camera</span>
+            <span class="cam-badge">LIVE</span>
+            <button class="cam-close" onclick="closeCamera()" title="Close">×</button>
+        </div>
+        <div class="cam-img-wrap">
+            <img id="cam-img" src="" alt="Webcam" referrerpolicy="no-referrer" crossorigin="anonymous">
+        </div>
+        <div class="cam-footer">
+            <span class="cam-peak-label" id="cam-peak-label">—</span>
+            <span class="cam-updated" id="cam-updated">—</span>
+            <a class="cam-ext-link" id="cam-ext-link" href="#" target="_blank" rel="noopener">↗ Full feed</a>
+        </div>
+    </div>
+
+    <!-- loading bar -->
+    <div class="init-bar"></div>
+
+    <!-- corner brackets -->
+    <div class="corner corner-tl"></div>
+    <div class="corner corner-tr"></div>
+    <div class="corner corner-bl"></div>
+    <div class="corner corner-br"></div>
+
+    <!-- scan ring decoration -->
+    <div class="scan-dot"></div>
+
+    <!-- TOP HUD -->
+    <div class="hud hud-top">
+        <span class="hud-title">GEO-COM</span>
+        <span class="hud-sep">|</span>
+        <span class="hud-title" style="font-size:0.65rem; opacity:0.6;">TERRAIN ANALYSIS — DEU</span>
+        <span class="hud-sep">|</span>
+        <span id="hud-time">--:--:--</span>
+    </div>
+
+    <!-- BOTTOM HUD coords -->
+    <div class="hud hud-bottom">
+        <span class="hud-coord" id="hud-lat">LAT: --</span>
+        <span class="hud-coord" id="hud-lng">LNG: --</span>
+        <span class="hud-coord" id="hud-alt" style="color:var(--amber); text-shadow:var(--amber-glow);">ALT: -- M</span>
+        <span class="hud-coord" id="hud-zoom" style="color:rgba(0,245,255,0.6);">ZOOM: --</span>
+    </div>
+
+    <!-- RIGHT HUD — terrain exaggeration -->
+    <div class="hud-right">
+        <span class="hud-knob-label">Terrain</span>
+        <div class="hud-knob">
+            <button class="knob-btn" id="exag-up" title="Increase exaggeration">▲</button>
+            <div class="exag-val" id="exag-val">2.5×</div>
+            <button class="knob-btn" id="exag-down" title="Decrease exaggeration">▼</button>
+        </div>
+    </div>
+
+    <div class="shell">
+        <!-- MAP -->
+        <div id="map"></div>
+
+        <!-- SIDEBAR -->
         <aside class="sidebar">
+
+            <!-- header -->
             <div class="header">
-                <h1 class="title">COMMAND CENTER</h1>
-                <div class="subtitle">GEO-DATA MODULE v2.4</div>
-            </div>
-
-            <div class="status-panel">
-                <div class="status-row">
-                    <span class="status-label">SYS_STATUS</span>
-                    <span class="status-value">ONLINE</span>
+                <div class="logo-line">
+                    <div class="logo-dot"></div>
+                    <div class="title">GEO-COM</div>
                 </div>
-                <div class="status-row">
-                    <span class="status-label">UPLINK</span>
-                    <span class="status-value">SECURE</span>
+                <div class="subtitle">Terrain Module</div>
+            </div>
+
+            <!-- elevation index -->
+            <div>
+                <div class="sec-title">Elevation Index</div>
+                <div class="terrain-bars">
+                    <div class="tbar-row">
+                        <div class="tbar-label"><span>Alps</span><span>2962 m</span></div>
+                        <div class="tbar-track">
+                            <div class="tbar-fill" style="width:92%"></div>
+                        </div>
+                    </div>
+                    <div class="tbar-row">
+                        <div class="tbar-label"><span>Black Forest</span><span>1493 m</span></div>
+                        <div class="tbar-track">
+                            <div class="tbar-fill" style="width:46%"></div>
+                        </div>
+                    </div>
+                    <div class="tbar-row">
+                        <div class="tbar-label"><span>Erzgebirge</span><span>1244 m</span></div>
+                        <div class="tbar-track">
+                            <div class="tbar-fill" style="width:38%"></div>
+                        </div>
+                    </div>
+                    <div class="tbar-row">
+                        <div class="tbar-label"><span>Harz</span><span>1141 m</span></div>
+                        <div class="tbar-track">
+                            <div class="tbar-fill" style="width:35%"></div>
+                        </div>
+                    </div>
+                    <div class="tbar-row">
+                        <div class="tbar-label"><span>North Plain</span><span>~80 m</span></div>
+                        <div class="tbar-track">
+                            <div class="tbar-fill" style="width:3%"></div>
+                        </div>
+                    </div>
                 </div>
-                <div class="status-row">
-                    <span class="status-label">LOCAL_TIME</span>
-                    <span class="status-value">22:57:10</span>
-                </div>
             </div>
 
-            <div class="controls">
-                <div class="section-title">Tactical Operations</div>
+            <div class="divider"></div>
 
-                <button class="btn">
-                    <span>Select Bavaria</span>
-                    <span class="btn-icon">❖</span>
-                </button>
+            <!-- tactical ops -->
+            <div>
+                <div class="sec-title">Operations</div>
 
-                <button class="btn">
-                    <span>Scan Terrain</span>
-                    <span class="btn-icon">⦾</span>
-                </button>
+                <select class="tac-select" id="tac-controls">
+                    <option value="">Map controls…</option>
+                    <option value="terrain">Toggle terrain 3D</option>
+                    <option value="tilt">Dramatic tilt</option>
+                    <option value="orbit">Orbit mode</option>
+                    <option value="layer-dark">Map layer — Dark</option>
+                    <option value="layer-satellite">Map layer — Satellite</option>
+                    <option value="layer-winter">Map layer — Winter</option>
+                    <option value="north">Fly → North Sea</option>
+                    <option value="overview">Fly → Overview</option>
+                </select>
 
-                <button class="btn btn-secondary">
-                    <span>Toggle Night Vision</span>
-                    <span class="btn-icon">◑</span>
-                </button>
+                <select class="tac-select" id="tac-peaks">
+                    <option value="">Fly to peak…</option>
+                    <optgroup label="Alps">
+                        <option value="zugspitze">Zugspitze — 2962 m</option>
+                        <option value="watzmann">Watzmann — 2713 m</option>
+                        <option value="hochkalter">Hochkalter — 2607 m</option>
+                        <option value="berchtesgaden">Berchtesgaden Alps — 2523 m</option>
+                        <option value="allgaeu">Allgäu Alps — 2280 m</option>
+                    </optgroup>
+                    <optgroup label="Black Forest">
+                        <option value="feldberg">Feldberg — 1493 m</option>
+                        <option value="belchen">Belchen — 1414 m</option>
+                        <option value="schauinsland">Schauinsland — 1284 m</option>
+                    </optgroup>
+                    <optgroup label="Bavarian Forest">
+                        <option value="arber">Großer Arber — 1456 m</option>
+                        <option value="rachels">Großer Rachel — 1453 m</option>
+                        <option value="lusen">Lusen — 1373 m</option>
+                    </optgroup>
+                    <optgroup label="Harz">
+                        <option value="brocken">Brocken — 1141 m</option>
+                        <option value="wurmberg">Wurmberg — 971 m</option>
+                        <option value="achtermann">Achtermann — 925 m</option>
+                    </optgroup>
+                    <optgroup label="Erzgebirge">
+                        <option value="fichtelberg">Fichtelberg — 1215 m</option>
+                        <option value="keilberg">Keilberg — 1244 m</option>
+                    </optgroup>
+                    <optgroup label="Thuringia / Rhön">
+                        <option value="beerberg">Beerberg — 982 m</option>
+                        <option value="wasserkuppe">Wasserkuppe — 950 m</option>
+                        <option value="inselsberg">Gr. Inselsberg — 916 m</option>
+                    </optgroup>
+                    <optgroup label="Sauerland">
+                        <option value="langenberg">Langenberg — 843 m</option>
+                        <option value="kahler">Kahler Asten — 841 m</option>
+                    </optgroup>
+                    <optgroup label="Eifel / Hunsrück">
+                        <option value="erbeskopf">Erbeskopf — 816 m</option>
+                        <option value="hoheacht">Hohe Acht — 747 m</option>
+                    </optgroup>
+                    <optgroup label="Taunus">
+                        <option value="grosserfeld">Gr. Feldberg — 879 m</option>
+                    </optgroup>
+                </select>
 
-                <button class="btn">
-                    <span>Deploy Units</span>
-                    <span class="btn-icon">⇪</span>
+                <button class="btn" onclick="executeTactical()">
+                    <span>Execute</span><span class="btn-icon">›</span>
                 </button>
             </div>
 
-            <div id="instruction" style="font-family: monospace; color: #88ccee; font-size: 0.9rem; margin-top:10px;">
-                AWAITING TARGET SELECTION...<br><br>
-                > Click on a federal state to scan.
-            </div>
+            <div class="divider"></div>
 
-            <div id="region-panel" class="info-panel hidden">
-                <h2 class="region-name" id="state-name">SCANNING...</h2>
+            <!-- hint -->
+            <div id="scan-instruction" class="scan-text">Click a state to scan region.</div>
+
+            <!-- region panel -->
+            <div id="region-panel" class="region-panel">
+                <div class="region-name" id="rp-name">—</div>
 
                 <div class="data-row">
-                    <span class="data-label">ELEVATION STATUS:</span>
-                    <span class="data-value" id="state-elev">NOMINAL</span>
+                    <span class="d-label">Coordinates</span>
+                    <span class="d-value" id="rp-coord">—</span>
                 </div>
                 <div class="data-row">
-                    <span class="data-label">COORDINATES:</span>
-                    <span class="data-value" id="state-coords">--.--, --.--</span>
+                    <span class="d-label">Peak elevation</span>
+                    <span class="d-value" id="rp-elev">—</span>
                 </div>
-                <div class="data-row" style="margin-top: 20px;">
-                    <span class="data-label">THREAT LEVEL:</span>
-                    <span class="data-value text-danger">SECURE</span>
+                <div class="data-row">
+                    <span class="d-label">Area</span>
+                    <span class="d-value" id="rp-area">—</span>
+                </div>
+
+                <div class="threat-row">
+                    <div class="threat-label">
+                        <span>Threat</span>
+                        <span id="tp-label">Secure</span>
+                    </div>
+                    <div class="threat-track">
+                        <div class="threat-fill threat-low" id="tp-fill" style="width:15%"></div>
+                    </div>
                 </div>
             </div>
 
         </aside>
-
-        <!-- Main Map Area -->
-        <main class="main-content">
-            <!-- TARGET MAP CONTAINER -->
-            <div id="map"></div>
-
-            <!-- Contextual UI Overlays -->
-            <div class="crosshair"></div>
-            <div class="coordinates-overlay">LAT: 48.1351 N | LNG: 11.5820 E | ALT: 520M</div>
-        </main>
     </div>
 
     <script>
-        // 1. Config
-        const apiKey = 'YOUR_MAPTILER_API_KEY_HERE'; // <-- INSERT YOUR MAPTILER API KEY HERE
+        // ── CONFIG ──────────────────────────────────────────────────────────────────
+        const API_KEY = 'gsAFdLyqMfi6TYFzpExS';
+        const STYLES = [
+            `https://api.maptiler.com/maps/dataviz-dark/style.json?key=${API_KEY}`,
+            `https://api.maptiler.com/maps/satellite/style.json?key=${API_KEY}`,
+            `https://api.maptiler.com/maps/winter-v2/style.json?key=${API_KEY}`
+        ];
+        let styleIdx = 0;
 
-        // 2. Initialize MapLibre Map
+        // state data: [peak elevation M, area km², threat 0–100]
+        const STATE_DATA = {
+            'Bayern': ['2962 M', '70,552 km²', 22],
+            'Baden-Württemberg': ['1493 M', '35,751 km²', 15],
+            'Nordrhein-Westfalen': ['843 M', '34,083 km²', 41],
+            'Niedersachsen': ['971 M', '47,614 km²', 18],
+            'Brandenburg': ['178 M', '29,654 km²', 10],
+            'Mecklenburg-Vorpommern': ['179 M', '23,211 km²', 8],
+            'Sachsen': ['1244 M', '18,416 km²', 30],
+            'Sachsen-Anhalt': ['1141 M', '20,447 km²', 20],
+            'Thüringen': ['983 M', '16,173 km²', 25],
+            'Hessen': ['950 M', '21,115 km²', 18],
+            'Rheinland-Pfalz': ['816 M', '19,854 km²', 17],
+            'Saarland': ['695 M', '2,571 km²', 12],
+            'Schleswig-Holstein': ['167 M', '15,799 km²', 9],
+            'Hamburg': ['116 M', '755 km²', 35],
+            'Bremen': ['32 M', '419 km²', 28],
+            'Berlin': ['115 M', '892 km²', 55],
+        };
+
+        // ── MAP INIT ────────────────────────────────────────────────────────────────
         const map = new maplibregl.Map({
             container: 'map',
-            style: `https://api.maptiler.com/maps/dataviz-dark/style.json?key=${apiKey}`,
-            center: [10.4515, 51.1657], // Center of Germany
-            zoom: 5.5,
-            pitch: 65, // High pitch for 3D effect
-            bearing: 0
+            style: STYLES[0],
+            center: [10.4515, 51.1657],
+            zoom: 5.8,
+            pitch: 68,
+            bearing: -8,
+            antialias: true
         });
 
-        // Ensure the map resizes correctly on browser resize
         window.addEventListener('resize', () => map.resize());
 
+        // ── CLOCK ───────────────────────────────────────────────────────────────────
+        function tick() {
+            const now = new Date();
+            document.getElementById('hud-time').textContent =
+                now.toTimeString().slice(0, 8);
+        }
+        tick();
+        setInterval(tick, 1000);
+
+        // ── COORDINATE HUD ──────────────────────────────────────────────────────────
+        map.on('mousemove', (e) => {
+            document.getElementById('hud-lat').textContent = `LAT: ${e.lngLat.lat.toFixed(4)}`;
+            document.getElementById('hud-lng').textContent = `LNG: ${e.lngLat.lng.toFixed(4)}`;
+        });
+
+        map.on('zoom', () => {
+            document.getElementById('hud-zoom').textContent = `ZOOM: ${map.getZoom().toFixed(1)}`;
+        });
+
+        // ── ON LOAD ─────────────────────────────────────────────────────────────────
         map.on('load', () => {
 
-            // 3. Add 3D Terrain
-            map.addSource('terrain-source', {
+            // 3D TERRAIN
+            map.addSource('terrain', {
                 type: 'raster-dem',
-                url: `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${apiKey}`,
+                url: `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${API_KEY}`,
                 tileSize: 256
             });
-            map.setTerrain({ source: 'terrain-source', exaggeration: 2.0 });
+            map.setTerrain({ source: 'terrain', exaggeration: EXAG });
 
-            // 4. Add GeoJSON Data for German States (Bundesländer)
-            map.addSource('germany-states', {
+            // SKY
+            map.setSky({
+                'sky-color': '#010d1a',
+                'sky-horizon-blend': 0.4,
+                'horizon-color': '#001833',
+                'horizon-fog-blend': 0.6,
+                'fog-color': '#020d1a',
+                'fog-ground-blend': 0.7,
+                'atmosphere-blend': ['interpolate', ['linear'], ['zoom'], 0, 1, 12, 0]
+            });
+
+            // GERMANY STATES
+            map.addSource('states', {
                 type: 'geojson',
                 data: 'https://raw.githubusercontent.com/isellsoap/deutschlandGeoJSON/main/2_bundeslaender/2_hoch.geo.json',
                 generateId: true
             });
 
-            // 5. Add Sci-Fi Polygon Fill Layer
+            // fill — only visible on hover / active
             map.addLayer({
                 id: 'states-fill',
                 type: 'fill',
-                source: 'germany-states',
+                source: 'states',
                 paint: {
-                    'fill-color': '#00ffff',
+                    'fill-color': [
+                        'case',
+                        ['boolean', ['feature-state', 'active'], false], '#00f5ff',
+                        ['boolean', ['feature-state', 'hover'], false], '#00ccff',
+                        '#00f5ff'
+                    ],
                     'fill-opacity': [
                         'case',
-                        ['boolean', ['feature-state', 'active'], false],
-                        0.4, // Active state opacity
-                        0.0  // Completely transparent default
+                        ['boolean', ['feature-state', 'active'], false], 0.22,
+                        ['boolean', ['feature-state', 'hover'], false], 0.08,
+                        0.0
                     ]
                 }
             });
 
-            // 6. Add Sci-Fi Glowing Borders Layer
+            // outer glow border
             map.addLayer({
-                id: 'states-borders',
+                id: 'states-glow',
                 type: 'line',
-                source: 'germany-states',
+                source: 'states',
                 paint: {
-                    'line-color': '#00ffff',
+                    'line-color': '#00a8cc',
+                    'line-width': 6,
+                    'line-blur': 8,
+                    'line-opacity': 0.2
+                }
+            });
+
+            // crisp sci-fi border
+            map.addLayer({
+                id: 'states-border',
+                type: 'line',
+                source: 'states',
+                paint: {
+                    'line-color': [
+                        'case',
+                        ['boolean', ['feature-state', 'active'], false], '#00f5ff',
+                        '#00a8cc'
+                    ],
                     'line-width': [
                         'case',
-                        ['boolean', ['feature-state', 'active'], false],
-                        4, // Active state line width
-                        2  // Default state line width
+                        ['boolean', ['feature-state', 'active'], false], 2.5,
+                        1.2
                     ],
-                    // Add a glow effect
                     'line-opacity': [
                         'case',
-                        ['boolean', ['feature-state', 'active'], false],
-                        1.0, // Active state glow
-                        0.6  // Default state glow
+                        ['boolean', ['feature-state', 'active'], false], 1.0,
+                        0.5
                     ]
                 }
             });
+
+            document.getElementById('hud-alt').textContent = 'ALT: MAP LOADED';
+            document.getElementById('hud-zoom').textContent = `ZOOM: ${map.getZoom().toFixed(1)}`;
         });
 
-        // 7. Click Interaction State Management
-        let clickedStateId = null;
-
-        map.on('click', 'states-fill', (e) => {
-            if (e.features.length > 0) {
-                const feature = e.features[0];
-                const stateName = feature.properties.NAME_1 || feature.properties.name || "UNKNOWN REGION"; // Fallbacks depending on GeoJSON schema
-
-                // Remove highlight from previously clicked state
-                if (clickedStateId !== null) {
-                    map.setFeatureState(
-                        { source: 'germany-states', id: clickedStateId },
-                        { active: false }
-                    );
-                }
-
-                // Apply highlight to the new clicked state
-                clickedStateId = feature.id;
-                map.setFeatureState(
-                    { source: 'germany-states', id: clickedStateId },
-                    { active: true }
-                );
-
-                // Update UI Sidebar Panel
-                document.getElementById('instruction').style.display = 'none';
-                document.getElementById('region-panel').classList.remove('hidden');
-
-                document.getElementById('state-name').textContent = stateName;
-                document.getElementById('state-coords').textContent = `${e.lngLat.lat.toFixed(4)}, ${e.lngLat.lng.toFixed(4)}`;
-            }
-        });
-
-        // Change mouse cursor when hovering over states
-        map.on('mouseenter', 'states-fill', () => {
+        // ── HOVER ───────────────────────────────────────────────────────────────────
+        let hoverId = null;
+        map.on('mousemove', 'states-fill', (e) => {
+            if (!e.features.length) return;
+            if (hoverId !== null) map.setFeatureState({ source: 'states', id: hoverId }, { hover: false });
+            hoverId = e.features[0].id;
+            map.setFeatureState({ source: 'states', id: hoverId }, { hover: true });
             map.getCanvas().style.cursor = 'crosshair';
         });
-
         map.on('mouseleave', 'states-fill', () => {
+            if (hoverId !== null) map.setFeatureState({ source: 'states', id: hoverId }, { hover: false });
+            hoverId = null;
             map.getCanvas().style.cursor = '';
         });
+
+        // ── CLICK ───────────────────────────────────────────────────────────────────
+        let activeId = null;
+        map.on('click', 'states-fill', (e) => {
+            if (!e.features.length) return;
+            const feat = e.features[0];
+            const name = feat.properties.NAME_1 || feat.properties.name || 'UNKNOWN';
+
+            if (activeId !== null) map.setFeatureState({ source: 'states', id: activeId }, { active: false });
+            activeId = feat.id;
+            map.setFeatureState({ source: 'states', id: activeId }, { active: true });
+
+            const data = STATE_DATA[name] || ['N/A', 'N/A', 50];
+
+            document.getElementById('scan-instruction').style.display = 'none';
+            const rp = document.getElementById('region-panel');
+            rp.classList.remove('visible');
+            void rp.offsetWidth; // retrigger animation
+            rp.classList.add('visible');
+
+            document.getElementById('rp-name').textContent = name;
+
+            document.getElementById('rp-coord').textContent = `${e.lngLat.lat.toFixed(3)}° N, ${e.lngLat.lng.toFixed(3)}° E`;
+            document.getElementById('rp-elev').textContent = data[0];
+            document.getElementById('rp-area').textContent = data[1];
+
+            const threat = data[2];
+            const fill = document.getElementById('tp-fill');
+            const label = document.getElementById('tp-label');
+            fill.style.width = threat + '%';
+            fill.className = 'threat-fill ' + (threat < 30 ? 'threat-low' : threat < 60 ? 'threat-medium' : 'threat-high');
+            label.textContent = threat < 30 ? 'SECURE' : threat < 60 ? 'ELEVATED' : 'CRITICAL';
+
+            // fly to region
+            map.flyTo({
+                center: e.lngLat,
+                zoom: Math.max(map.getZoom(), 6.5),
+                pitch: 72,
+                bearing: -12,
+                duration: 1800,
+                essential: true
+            });
+
+            document.getElementById('hud-lat').textContent = `LAT: ${e.lngLat.lat.toFixed(4)}`;
+            document.getElementById('hud-lng').textContent = `LNG: ${e.lngLat.lng.toFixed(4)}`;
+        });
+
+        // ── TERRAIN EXAGGERATION ────────────────────────────────────────────────────
+        let EXAG = 2.5;
+
+        function setExag(val) {
+            EXAG = Math.round(Math.min(5, Math.max(0.5, val)) * 10) / 10;
+            document.getElementById('exag-val').textContent = EXAG + '×';
+            if (map.getTerrain()) map.setTerrain({ source: 'terrain', exaggeration: EXAG });
+        }
+
+        document.getElementById('exag-up').addEventListener('click', () => setExag(EXAG + 0.5));
+        document.getElementById('exag-down').addEventListener('click', () => setExag(EXAG - 0.5));
+
+        // ── TERRAIN TOGGLE ──────────────────────────────────────────────────────────
+        let terrainOn = true;
+        function toggleTerrain() {
+            terrainOn = !terrainOn;
+            map.setTerrain(terrainOn ? { source: 'terrain', exaggeration: EXAG } : null);
+            const btn = document.getElementById('btn-terrain');
+            btn.classList.toggle('active', terrainOn);
+            document.getElementById('hud-alt').textContent = terrainOn ? 'ALT: 3D ACTIVE' : 'ALT: FLAT MODE';
+        }
+
+        // ── SNAP VIEW ───────────────────────────────────────────────────────────────
+        let dramaTick = 0;
+        const DRAMA = [
+            { center: [12.9, 47.4], zoom: 7.8, pitch: 80, bearing: 30 },  // Alps
+            { center: [8.2, 47.9], zoom: 7.5, pitch: 75, bearing: -20 },  // Black Forest
+            { center: [10.4, 51.2], zoom: 5.8, pitch: 68, bearing: -8 },  // Germany overview
+            { center: [8.8, 53.6], zoom: 7.0, pitch: 60, bearing: 10 },   // North Sea coast
+        ];
+        function snapView() {
+            const v = DRAMA[dramaTick % DRAMA.length];
+            map.flyTo({ ...v, duration: 2600, essential: true });
+            dramaTick++;
+        }
+
+        // ── ORBIT ───────────────────────────────────────────────────────────────────
+        let orbitInterval = null;
+        function toggleOrbit() {
+            const btn = document.getElementById('btn-orbit');
+            if (orbitInterval) {
+                clearInterval(orbitInterval);
+                orbitInterval = null;
+                btn.classList.remove('active');
+            } else {
+                btn.classList.add('active');
+                orbitInterval = setInterval(() => {
+                    map.setBearing((map.getBearing() + 0.4) % 360);
+                }, 35);
+            }
+        }
+
+        // ── STYLE SWITCH ─────────────────────────────────────────────────────────────
+        function switchStyle(idx) {
+            styleIdx = idx;
+            map.setStyle(STYLES[styleIdx]);
+            map.once('style.load', () => {
+                map.addSource('terrain', {
+                    type: 'raster-dem',
+                    url: `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${API_KEY}`,
+                    tileSize: 256
+                });
+                if (terrainOn) map.setTerrain({ source: 'terrain', exaggeration: EXAG });
+                map.addSource('states', {
+                    type: 'geojson',
+                    data: 'https://raw.githubusercontent.com/isellsoap/deutschlandGeoJSON/main/2_bundeslaender/2_hoch.geo.json',
+                    generateId: true
+                });
+                map.addLayer({ id: 'states-fill', type: 'fill', source: 'states', paint: { 'fill-color': '#00f5ff', 'fill-opacity': 0.0 } });
+                map.addLayer({ id: 'states-glow', type: 'line', source: 'states', paint: { 'line-color': '#00a8cc', 'line-width': 6, 'line-blur': 8, 'line-opacity': 0.2 } });
+                map.addLayer({ id: 'states-border', type: 'line', source: 'states', paint: { 'line-color': '#00a8cc', 'line-width': 1.2, 'line-opacity': 0.5 } });
+                activeId = null;
+            });
+        }
+
+        // ── PEAK / ACTION LOOKUP ─────────────────────────────────────────────────────
+        const PEAKS = {
+            // Alps
+            zugspitze: {
+                center: [10.9876, 47.4211], zoom: 12, pitch: 82, bearing: 30,
+                label: 'Zugspitze 2962 m',
+                cam: '/proxy/?url=https://www.foto-webcam.eu/webcam/zugspitze/current/1200.jpg',
+                camLink: 'https://www.foto-webcam.eu/webcam/zugspitze/'
+            },
+            watzmann: {
+                center: [12.9432, 47.5526], zoom: 12, pitch: 80, bearing: -15,
+                label: 'Watzmann 2713 m',
+                cam: '/proxy/?url=https://www.foto-webcam.eu/webcam/jenner/current/1200.jpg',
+                camLink: 'https://www.foto-webcam.eu/webcam/jenner/'
+            },
+            hochkalter: { center: [12.8200, 47.5700], zoom: 12, pitch: 80, bearing: 10, label: 'Hochkalter 2607 m' },
+            berchtesgaden: {
+                center: [12.9800, 47.5500], zoom: 10, pitch: 78, bearing: -5,
+                label: 'Berchtesgaden Alps 2523 m',
+                cam: '/proxy/?url=https://www.foto-webcam.eu/webcam/jenner/current/1200.jpg',
+                camLink: 'https://www.foto-webcam.eu/webcam/jenner/'
+            },
+            allgaeu: {
+                center: [10.2800, 47.4400], zoom: 11, pitch: 78, bearing: 20,
+                label: 'Allgäu (Gr. Daumen) 2280 m',
+                cam: '/proxy/?url=https://www.foto-webcam.eu/webcam/nebelhorn/current/1200.jpg',
+                camLink: 'https://www.foto-webcam.eu/webcam/nebelhorn/'
+            },
+            // Black Forest
+            feldberg: {
+                center: [8.0046, 47.8742], zoom: 12, pitch: 75, bearing: 5,
+                label: 'Feldberg 1493 m',
+                cam: '/proxy/?url=https://www.foto-webcam.eu/webcam/hochblauen/current/1200.jpg',
+                camLink: 'https://www.foto-webcam.eu/webcam/hochblauen/'
+            },
+            belchen: { center: [7.8330, 47.8229], zoom: 12, pitch: 74, bearing: 10, label: 'Belchen 1414 m' },
+            schauinsland: { center: [7.8988, 47.8694], zoom: 12, pitch: 72, bearing: -10, label: 'Schauinsland 1284 m' },
+            // Bavarian Forest
+            arber: { center: [13.1282, 49.1130], zoom: 12, pitch: 75, bearing: 15, label: 'Großer Arber 1456 m' },
+            rachels: { center: [13.4100, 48.9800], zoom: 12, pitch: 75, bearing: 5, label: 'Großer Rachel 1453 m' },
+            lusen: { center: [13.4600, 48.9300], zoom: 12, pitch: 74, bearing: -5, label: 'Lusen 1373 m' },
+            // Harz
+            brocken: { center: [10.6153, 51.7996], zoom: 12, pitch: 72, bearing: 20, label: 'Brocken 1141 m' },
+            wurmberg: { center: [10.6700, 51.7600], zoom: 12, pitch: 70, bearing: 10, label: 'Wurmberg 971 m' },
+            achtermann: { center: [10.7100, 51.7900], zoom: 12, pitch: 70, bearing: -5, label: 'Achtermann 925 m' },
+            // Erzgebirge
+            fichtelberg: { center: [12.9556, 50.4286], zoom: 12, pitch: 72, bearing: 5, label: 'Fichtelberg 1215 m' },
+            keilberg: { center: [12.9640, 50.4040], zoom: 12, pitch: 72, bearing: -5, label: 'Keilberg 1244 m' },
+            // Thuringia / Rhön
+            inselsberg: { center: [10.4700, 50.8600], zoom: 12, pitch: 70, bearing: 10, label: 'Großer Inselsberg 916 m' },
+            beerberg: { center: [10.6600, 50.6600], zoom: 12, pitch: 70, bearing: 5, label: 'Beerberg 982 m' },
+            wasserkuppe: { center: [9.9380, 50.4989], zoom: 12, pitch: 70, bearing: -5, label: 'Wasserkuppe 950 m' },
+            // Sauerland
+            langenberg: { center: [8.4800, 51.2700], zoom: 12, pitch: 68, bearing: 10, label: 'Langenberg 843 m' },
+            kahler: { center: [8.4900, 51.1800], zoom: 12, pitch: 68, bearing: -5, label: 'Kahler Asten 841 m' },
+            // Eifel / Hunsrück
+            hoheacht: { center: [7.0100, 50.3800], zoom: 12, pitch: 68, bearing: 5, label: 'Hohe Acht 747 m' },
+            erbeskopf: { center: [7.0700, 49.7400], zoom: 12, pitch: 68, bearing: 10, label: 'Erbeskopf 816 m' },
+            // Taunus
+            grosserfeld: { center: [8.4520, 50.2260], zoom: 12, pitch: 70, bearing: -10, label: 'Großer Feldberg 879 m' },
+        };
+
+        const CONTROLS = {
+            terrain: toggleTerrain,
+            tilt: snapView,
+            orbit: toggleOrbit,
+            'layer-dark': () => switchStyle(0),
+            'layer-satellite': () => switchStyle(1),
+            'layer-winter': () => switchStyle(2),
+            north: () => map.flyTo({ center: [9.0, 54.2], zoom: 7.0, pitch: 55, bearing: 5, duration: 2400, essential: true }),
+            overview: () => map.flyTo({ center: [10.4515, 51.1657], zoom: 5.8, pitch: 68, bearing: -8, duration: 2000, essential: true }),
+        };
+
+        function executeTactical() {
+            const ctrl = document.getElementById('tac-controls').value;
+            const peak = document.getElementById('tac-peaks').value;
+
+            if (ctrl && CONTROLS[ctrl]) {
+                CONTROLS[ctrl]();
+                document.getElementById('tac-controls').value = '';
+                return;
+            }
+            if (peak && PEAKS[peak]) {
+                const p = PEAKS[peak];
+                map.flyTo({ center: p.center, zoom: p.zoom, pitch: p.pitch, bearing: p.bearing, duration: 2600, essential: true });
+                document.getElementById('hud-alt').textContent = p.label.toUpperCase();
+                document.getElementById('tac-peaks').value = '';
+                // open camera if available
+                if (p.cam) openCamera(p);
+                else closeCamera();
+            }
+        }
+
+        // ── CAMERA PANEL ───────────────────────────────────────────────
+        let camTimer = null;
+
+        function openCamera(p) {
+            const panel = document.getElementById('cam-panel');
+            const img = document.getElementById('cam-img');
+            const label = document.getElementById('cam-peak-label');
+            const link = document.getElementById('cam-ext-link');
+            const updated = document.getElementById('cam-updated');
+
+            label.textContent = p.label;
+            link.href = p.camLink;
+
+            function refresh() {
+                img.src = p.cam + '?t=' + Date.now();
+                updated.textContent = 'Updated ' + new Date().toTimeString().slice(0, 5);
+            }
+
+            clearInterval(camTimer);
+            refresh();
+            camTimer = setInterval(refresh, 30000);
+
+            panel.classList.add('visible');
+        }
+
+        function closeCamera() {
+            clearInterval(camTimer);
+            document.getElementById('cam-img').src = '';
+            document.getElementById('cam-panel').classList.remove('visible');
+        }
+
+        // make cam panel draggable
+        (function () {
+            const el = document.getElementById('cam-panel');
+            const hdr = document.getElementById('cam-header');
+            let ox, oy, sx, sy, dragging = false;
+            hdr.addEventListener('mousedown', e => {
+                dragging = true;
+                sx = el.offsetLeft !== 0 ? el.offsetLeft : el.getBoundingClientRect().left;
+                sy = el.offsetTop !== 0 ? el.offsetTop : el.getBoundingClientRect().top;
+                ox = e.clientX; oy = e.clientY;
+                el.style.right = 'auto'; el.style.bottom = 'auto';
+                el.style.left = sx + 'px'; el.style.top = sy + 'px';
+            });
+            document.addEventListener('mousemove', e => {
+                if (!dragging) return;
+                el.style.left = (sx + e.clientX - ox) + 'px';
+                el.style.top = (sy + e.clientY - oy) + 'px';
+            });
+            document.addEventListener('mouseup', () => dragging = false);
+        })();
     </script>
 </body>
 
