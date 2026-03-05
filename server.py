@@ -8,30 +8,49 @@ import os
 
 PORT = 8900
 
+# Only these hostnames may be fetched through the proxy.
+# This prevents the server being used as an open relay.
+ALLOWED_HOSTS = {'www.foto-webcam.eu', 'foto-webcam.eu'}
+
 class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
-        # /proxy/?url=https://... — fetch the image server-side
         if self.path.startswith('/proxy/'):
             parsed = urlparse(self.path)
             params = parse_qs(parsed.query)
             target = params.get('url', [None])[0]
+
             if not target:
                 self.send_error(400, 'Missing ?url= parameter')
                 return
+
+            # ── Security: allowlist check ──────────────────────────────────
+            target_host = urlparse(target).hostname or ''
+            if target_host not in ALLOWED_HOSTS:
+                self.send_error(403, f'Host not allowed: {target_host}')
+                return
+
+            # ── Only allow HTTPS ───────────────────────────────────────────
+            if not target.startswith('https://'):
+                self.send_error(403, 'Only HTTPS targets are allowed')
+                return
+
             try:
                 req = urllib.request.Request(target, headers={
                     'User-Agent': 'Mozilla/5.0 (compatible; GeoMapProxy/1.0)',
-                    # Spoof referer so foto-webcam.eu hotlink check passes
                     'Referer': 'https://www.foto-webcam.eu/',
                 })
                 with urllib.request.urlopen(req, timeout=10) as resp:
+                    content_type = resp.headers.get('Content-Type', '')
+                    # Only relay image responses
+                    if 'image' not in content_type:
+                        self.send_error(502, 'Upstream did not return an image')
+                        return
                     data = resp.read()
                 self.send_response(200)
                 self.send_header('Content-Type', 'image/jpeg')
                 self.send_header('Content-Length', str(len(data)))
                 self.send_header('Cache-Control', 'no-store')
-                # Allow JS on the page to use the response
-                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Access-Control-Allow-Origin', 'http://localhost:8900')
                 self.end_headers()
                 self.wfile.write(data)
             except Exception as e:
@@ -40,7 +59,6 @@ class Handler(SimpleHTTPRequestHandler):
             super().do_GET()
 
     def log_message(self, fmt, *args):
-        # Only log non-proxy requests to keep console clean
         if not self.path.startswith('/proxy/'):
             super().log_message(fmt, *args)
 
