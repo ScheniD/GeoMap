@@ -470,6 +470,50 @@
             line-height: 1.7;
         }
 
+        .cam-list {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .cam-list-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 0;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(0, 245, 255, 0.05);
+            transition: opacity 0.15s;
+        }
+
+        .cam-list-item:last-child {
+            border-bottom: none;
+        }
+
+        .cam-list-item:hover {
+            opacity: 0.75;
+        }
+
+        .cam-list-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #00ff88;
+            flex-shrink: 0;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .cam-list-name {
+            font-size: 0.72rem;
+            color: rgba(0, 245, 255, 0.7);
+            flex: 1;
+        }
+
+        .cam-list-elev {
+            font-size: 0.63rem;
+            color: rgba(0, 245, 255, 0.3);
+        }
+
         .hud {
             position: fixed;
             pointer-events: none;
@@ -975,6 +1019,39 @@
 
             <div class="divider"></div>
 
+            <div>
+                <div class="sec-title">Live Cameras</div>
+                <div class="cam-list">
+                    <div class="cam-list-item" onclick="flyToCamera('zugspitze')">
+                        <span class="cam-list-dot"></span>
+                        <span class="cam-list-name">Zugspitze</span>
+                        <span class="cam-list-elev">2962 m</span>
+                    </div>
+                    <div class="cam-list-item" onclick="flyToCamera('watzmann')">
+                        <span class="cam-list-dot"></span>
+                        <span class="cam-list-name">Watzmann</span>
+                        <span class="cam-list-elev">2713 m</span>
+                    </div>
+                    <div class="cam-list-item" onclick="flyToCamera('berchtesgaden')">
+                        <span class="cam-list-dot"></span>
+                        <span class="cam-list-name">Berchtesgaden Alps</span>
+                        <span class="cam-list-elev">2523 m</span>
+                    </div>
+                    <div class="cam-list-item" onclick="flyToCamera('allgaeu')">
+                        <span class="cam-list-dot"></span>
+                        <span class="cam-list-name">Allgäu (Nebelhorn)</span>
+                        <span class="cam-list-elev">2280 m</span>
+                    </div>
+                    <div class="cam-list-item" onclick="flyToCamera('feldberg')">
+                        <span class="cam-list-dot"></span>
+                        <span class="cam-list-name">Feldberg (Hochblauen)</span>
+                        <span class="cam-list-elev">1493 m</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
             <div id="scan-instruction" class="scan-text">Click a state to scan region.</div>
 
             <div id="region-panel" class="region-panel">
@@ -1418,6 +1495,14 @@
             clearInterval(camTimer);
             document.getElementById('cam-img').src = '';
             document.getElementById('cam-panel').classList.remove('visible');
+        }
+
+        function flyToCamera(key) {
+            const p = PEAKS[key];
+            if (!p) return;
+            map.flyTo({ center: p.center, zoom: p.zoom, pitch: p.pitch, bearing: p.bearing, duration: 2600, essential: true });
+            document.getElementById('hud-alt').textContent = p.label.toUpperCase();
+            if (p.cam) openCamera(p);
         }
 
         // make cam panel draggable
