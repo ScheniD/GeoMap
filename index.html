@@ -43,7 +43,6 @@
             color: var(--cyan);
         }
 
-        /* ── SCANLINES ─────────────────────────────────────── */
         body::before {
             content: '';
             position: fixed;
@@ -68,7 +67,6 @@
             }
         }
 
-        /* ── VHS flicker ───────────────────────────────────── */
         body::after {
             content: '';
             position: fixed;
@@ -109,7 +107,6 @@
             }
         }
 
-        /* ── LAYOUT ────────────────────────────────────────── */
         .shell {
             display: flex;
             width: 100%;
@@ -117,7 +114,6 @@
             position: relative;
         }
 
-        /* ── MAP ───────────────────────────────────────────── */
         #map {
             position: absolute;
             inset: 0;
@@ -134,7 +130,6 @@
             display: none !important;
         }
 
-        /* ── CORNER BRACKETS ──────────────────────────────── */
         .corner {
             position: fixed;
             width: 40px;
@@ -231,7 +226,6 @@
             left: auto;
         }
 
-        /* ── SIDEBAR ─ minimalist ──────────────────────────── */
         .sidebar {
             position: fixed;
             left: 0;
@@ -250,7 +244,6 @@
             overflow-y: auto;
         }
 
-        /* ── HEADER ─────────────────────────────────────────── */
         .header {
             padding-bottom: 18px;
             border-bottom: 1px solid rgba(0, 245, 255, 0.08);
@@ -301,13 +294,11 @@
             padding-left: 14px;
         }
 
-        /* ── DIVIDER ─────────────────────────────────────────── */
         .divider {
             height: 1px;
             background: rgba(0, 245, 255, 0.08);
         }
 
-        /* ── SECTION TITLE ───────────────────────────────────── */
         .sec-title {
             font-size: 0.58rem;
             letter-spacing: 2.5px;
@@ -316,7 +307,6 @@
             margin-bottom: 10px;
         }
 
-        /* ── TERRAIN BARS ────────────────────────────────────── */
         .terrain-bars {
             display: flex;
             flex-direction: column;
@@ -357,7 +347,6 @@
             }
         }
 
-        /* ── BUTTON ──────────────────────────────────────────── */
         .btn {
             background: transparent;
             border: none;
@@ -388,7 +377,6 @@
             font-size: 0.85rem;
         }
 
-        /* ── REGION PANEL ────────────────────────────────────── */
         .region-panel {
             display: none;
             flex-direction: column;
@@ -437,7 +425,6 @@
             color: rgba(0, 245, 255, 0.8);
         }
 
-        /* ── THREAT METER ────────────────────────────────────── */
         .threat-row {
             display: flex;
             flex-direction: column;
@@ -477,14 +464,12 @@
             background: #ff2244;
         }
 
-        /* ── HINT TEXT ───────────────────────────────────────── */
         .scan-text {
             font-size: 0.68rem;
             color: rgba(0, 245, 255, 0.25);
             line-height: 1.7;
         }
 
-        /* ── HUD OVERLAYS ──────────────────────────────────── */
         .hud {
             position: fixed;
             pointer-events: none;
@@ -545,7 +530,6 @@
             text-shadow: 0 0 8px var(--green);
         }
 
-        /* ── TERRAIN EXAGGERATION KNOB ─────────────────────── */
         .hud-right {
             position: fixed;
             right: 16px;
@@ -599,7 +583,6 @@
             text-align: center;
         }
 
-        /* ── SCAN RING ─────────────────────────────────────── */
         @keyframes ring-spin {
             from {
                 transform: translate(-50%, -50%) rotate(0deg);
@@ -626,7 +609,6 @@
             animation: pulse 1.6s ease-in-out infinite;
         }
 
-        /* ── TACTICAL DROPDOWN ─────────────────────────────── */
         .tac-select {
             width: 100%;
             background: rgba(0, 0, 0, 0.6);
@@ -665,7 +647,6 @@
             text-transform: uppercase;
         }
 
-        /* ── CAMERA OVERLAY ─────────────────────────────────────── */
         .cam-panel {
             position: fixed;
             bottom: 54px;
@@ -793,7 +774,6 @@
             background: rgba(0, 245, 255, 0.2);
         }
 
-        /* ── Animated loading bar at top ──────────────────── */
         .init-bar {
             position: fixed;
             top: 0;
@@ -826,7 +806,6 @@
 
 <body>
 
-    <!-- CAMERA PANEL -->
     <div class="cam-panel" id="cam-panel">
         <div class="cam-header" id="cam-header">
             <span class="cam-title">Live Camera</span>
@@ -843,19 +822,15 @@
         </div>
     </div>
 
-    <!-- loading bar -->
     <div class="init-bar"></div>
 
-    <!-- corner brackets -->
     <div class="corner corner-tl"></div>
     <div class="corner corner-tr"></div>
     <div class="corner corner-bl"></div>
     <div class="corner corner-br"></div>
 
-    <!-- scan ring decoration -->
     <div class="scan-dot"></div>
 
-    <!-- TOP HUD -->
     <div class="hud hud-top">
         <span class="hud-title">GEO-COM</span>
         <span class="hud-sep">|</span>
@@ -864,7 +839,6 @@
         <span id="hud-time">--:--:--</span>
     </div>
 
-    <!-- BOTTOM HUD coords -->
     <div class="hud hud-bottom">
         <span class="hud-coord" id="hud-lat">LAT: --</span>
         <span class="hud-coord" id="hud-lng">LNG: --</span>
@@ -872,7 +846,6 @@
         <span class="hud-coord" id="hud-zoom" style="color:rgba(0,245,255,0.6);">ZOOM: --</span>
     </div>
 
-    <!-- RIGHT HUD — terrain exaggeration -->
     <div class="hud-right">
         <span class="hud-knob-label">Terrain</span>
         <div class="hud-knob">
@@ -883,13 +856,11 @@
     </div>
 
     <div class="shell">
-        <!-- MAP -->
+
         <div id="map"></div>
 
-        <!-- SIDEBAR -->
         <aside class="sidebar">
 
-            <!-- header -->
             <div class="header">
                 <div class="logo-line">
                     <div class="logo-dot"></div>
@@ -898,7 +869,6 @@
                 <div class="subtitle">Terrain Module</div>
             </div>
 
-            <!-- elevation index -->
             <div>
                 <div class="sec-title">Elevation Index</div>
                 <div class="terrain-bars">
@@ -937,7 +907,6 @@
 
             <div class="divider"></div>
 
-            <!-- tactical ops -->
             <div>
                 <div class="sec-title">Operations</div>
 
@@ -1006,10 +975,8 @@
 
             <div class="divider"></div>
 
-            <!-- hint -->
             <div id="scan-instruction" class="scan-text">Click a state to scan region.</div>
 
-            <!-- region panel -->
             <div id="region-panel" class="region-panel">
                 <div class="region-name" id="rp-name">—</div>
 
@@ -1046,12 +1013,11 @@
         // serves from the local .env file — it is never hardcoded here.
         const STYLES = [
             `https://api.maptiler.com/maps/dataviz-dark/style.json?key=${API_KEY}`,
-            `https://api.maptiler.com/maps/satellite/style.json?key=${API_KEY}`,
+            `https://api.maptiler.com/maps/hybrid/style.json?key=${API_KEY}`,
             `https://api.maptiler.com/maps/winter-v2/style.json?key=${API_KEY}`
         ];
         let styleIdx = 0;
 
-        // state data: [peak elevation M, area km², threat 0–100]
         const STATE_DATA = {
             'Bayern': ['2962 M', '70,552 km²', 22],
             'Baden-Württemberg': ['1493 M', '35,751 km²', 15],
@@ -1417,7 +1383,7 @@
                 map.flyTo({ center: p.center, zoom: p.zoom, pitch: p.pitch, bearing: p.bearing, duration: 2600, essential: true });
                 document.getElementById('hud-alt').textContent = p.label.toUpperCase();
                 document.getElementById('tac-peaks').value = '';
-                // open camera if available
+
                 if (p.cam) openCamera(p);
                 else closeCamera();
             }

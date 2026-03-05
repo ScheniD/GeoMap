@@ -36,7 +36,6 @@ CONFIG_JS = f'const API_KEY = "{API_KEY}";\n'.encode()
 # ── Proxy security: only fetch from these hosts ────────────────────────────
 ALLOWED_HOSTS = {'www.foto-webcam.eu', 'foto-webcam.eu'}
 
-
 class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
         # ── Serve API key as a JS config module ───────────────────────────
@@ -95,10 +94,9 @@ class Handler(SimpleHTTPRequestHandler):
         super().do_GET()
 
     def log_message(self, fmt, *args):
-        # Suppress proxy noise; log everything else normally
+
         if not self.path.startswith('/proxy/'):
             super().log_message(fmt, *args)
-
 
 if __name__ == '__main__':
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
